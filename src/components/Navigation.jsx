@@ -13,8 +13,7 @@ const Navigation = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('userInfo');
-    navigate('/');
-    window.location.reload();
+    window.location.href = '/';
   };
 
   useEffect(() => {

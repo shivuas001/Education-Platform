@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, Star, Users, CheckCircle, PlayCircle, Lock } from 'lucide-react';
+import { Clock, Star, Users, CheckCircle, PlayCircle, Lock, BookOpen, TrendingUp, Award } from 'lucide-react';
 
 const STATIC_COURSE_DB = {
   '1': {

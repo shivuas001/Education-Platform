@@ -30,8 +30,7 @@ const Register = () => {
 
       if (response.ok) {
         localStorage.setItem('userInfo', JSON.stringify(data));
-        navigate('/dashboard');
-        window.location.reload();
+        window.location.href = '/dashboard';
       } else {
         setError(data.message || 'Registration failed');
       }

@@ -8,11 +8,13 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import './index.css';
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <div className="page-layout">
         <Navigation />
         <main className="main-content">

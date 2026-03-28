@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, User, Menu, X } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BookOpen, User, Menu, X, LogOut } from 'lucide-react';
 import './Navigation.css';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
+  const handleLogout = () => {
+    localStorage.removeItem('userInfo');
+    navigate('/');
+    window.location.reload();
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,7 +25,6 @@ const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
@@ -51,10 +59,27 @@ const Navigation = () => {
         </div>
 
         <div className="nav-actions">
-           <Link to="/dashboard" className="btn btn-primary btn-sm profile-btn">
-             <User size={18} />
-             <span>Sign In</span>
-           </Link>
+           {userInfo ? (
+             <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+               <span style={{fontWeight: 600, display: 'none', '@media (min-width: 768px)': {display: 'block'}}}>
+                 Hi, {userInfo.name.split(' ')[0]}
+               </span>
+               <button onClick={handleLogout} className="btn btn-secondary btn-sm profile-btn">
+                 <LogOut size={18} />
+                 <span>Logout</span>
+               </button>
+             </div>
+           ) : (
+             <>
+               <Link to="/login" className="btn btn-secondary btn-sm profile-btn" style={{marginRight: '0.5rem'}}>
+                 Log In
+               </Link>
+               <Link to="/register" className="btn btn-primary btn-sm profile-btn">
+                 <User size={18} />
+                 <span>Sign Up</span>
+               </Link>
+             </>
+           )}
            <button 
              className="mobile-menu-btn"
              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

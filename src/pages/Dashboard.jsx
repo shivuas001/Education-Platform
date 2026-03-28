@@ -1,25 +1,85 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Clock, Award, PlayCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const MOCK_ENROLLED = [
-  {
-    id: '1',
+const MOCK_COURSE_META = {
+  '1': {
     title: 'Complete Web Design: from Figma to Webflow',
-    progress: 45,
-    nextLesson: 'Typography Basics',
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '12h 30m'
   },
-  {
-    id: '2',
-    title: 'Advanced React patterns',
-    progress: 12,
-    nextLesson: 'Custom Hooks',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80'
+  '2': {
+    title: 'Advanced React patterns and Performance',
+    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '15h 45m'
+  },
+  '3': {
+    title: 'Data Science Bootcamp 2024',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '42h 10m'
+  },
+  '4': {
+    title: 'Digital Marketing Masterclass',
+    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '8h 15m'
+  },
+  '5': {
+    title: 'Python for Beginners',
+    image: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '22h 40m'
+  },
+  '6': {
+    title: 'UI/UX Fundamentals via Figma',
+    image: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
+    duration: '10h 20m'
   }
-];
+};
 
 const Dashboard = () => {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+
+  useEffect(() => {
+    if (!userInfo) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/profile', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`
+          }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          setProfile(data);
+        } else {
+          console.error('Failed to fetch profile', data.message);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [navigate]);
+
+  if (loading) {
+    return <div className="container section-padding" style={{textAlign: 'center', paddingTop: '10rem'}}>Loading your profile...</div>;
+  }
+
+  if (!profile) {
+    return <div className="container section-padding" style={{textAlign: 'center', paddingTop: '10rem'}}>Error loading profile.</div>;
+  }
+
   return (
     <div className="dashboard-page animate-fade-in section-padding">
       <div className="container">
@@ -30,8 +90,8 @@ const Dashboard = () => {
           marginBottom: '3rem',
           background: 'radial-gradient(circle at top right, rgba(79, 70, 229, 0.2), transparent 40%), rgba(30, 41, 59, 0.7)'
         }}>
-          <h1 style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>Welcome back, <span className="text-gradient">Alex!</span> 👋</h1>
-          <p style={{color: 'var(--color-text-muted)', fontSize: '1.1rem'}}>You have learned for 14 hours this week. Keep it up!</p>
+          <h1 style={{fontSize: '2.5rem', marginBottom: '0.5rem'}}>Welcome back, <span className="text-gradient">{profile.name.split(' ')[0]}!</span> 👋</h1>
+          <p style={{color: 'var(--color-text-muted)', fontSize: '1.1rem'}}>You have enrolled in {profile.enrolledCourses?.length || 0} courses. Keep it up!</p>
         </div>
 
         {/* Stats Grid */}
@@ -44,7 +104,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p style={{margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>Enrolled Courses</p>
-              <h3 style={{margin: 0, fontSize: '1.5rem'}}>4</h3>
+              <h3 style={{margin: 0, fontSize: '1.5rem'}}>{profile.enrolledCourses?.length || 0}</h3>
             </div>
           </div>
           <div className="glass-panel" style={{padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -53,7 +113,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p style={{margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>Hours Learned</p>
-              <h3 style={{margin: 0, fontSize: '1.5rem'}}>128</h3>
+              <h3 style={{margin: 0, fontSize: '1.5rem'}}>0</h3>
             </div>
           </div>
           <div className="glass-panel" style={{padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -62,43 +122,55 @@ const Dashboard = () => {
             </div>
             <div>
               <p style={{margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>Certifications</p>
-              <h3 style={{margin: 0, fontSize: '1.5rem'}}>2</h3>
+              <h3 style={{margin: 0, fontSize: '1.5rem'}}>0</h3>
             </div>
           </div>
         </div>
 
         {/* Active Courses */}
         <h2 style={{fontSize: '1.8rem', marginBottom: '1.5rem'}}>Continue Learning</h2>
-        <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
-          {MOCK_ENROLLED.map(course => (
-            <div key={course.id} className="glass-panel" style={{
-              display: 'flex', gap: '1.5rem', padding: '1.5rem', alignItems: 'center', flexWrap: 'wrap'
-            }}>
-              <img src={course.image} alt={course.title} style={{
-                width: '160px', height: '100px', objectFit: 'cover', borderRadius: '0.5rem'
-              }} />
-              <div style={{flex: 1, minWidth: '250px'}}>
-                <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>{course.title}</h3>
-                <p style={{color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1rem'}}>
-                  Next up: <span style={{color: 'white', fontWeight: 500}}>{course.nextLesson}</span>
-                </p>
-                
-                {/* Progress Bar */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                  <div style={{flex: 1, height: '6px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '3px', overflow: 'hidden'}}>
-                    <div style={{height: '100%', width: `${course.progress}%`, background: 'var(--color-primary)', borderRadius: '3px'}}></div>
+        
+        {(!profile.enrolledCourses || profile.enrolledCourses.length === 0) ? (
+          <div className="glass-panel" style={{padding: '3rem', textAlign: 'center'}}>
+            <p style={{color: 'var(--color-text-muted)', marginBottom: '1.5rem'}}>You haven't enrolled in any courses yet.</p>
+            <Link to="/courses" className="btn btn-primary">Browse Courses</Link>
+          </div>
+        ) : (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+            {profile.enrolledCourses.map(courseId => {
+              const meta = MOCK_COURSE_META[courseId] || { title: `Course ${courseId}`, image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' };
+              
+              return (
+                <div key={courseId} className="glass-panel" style={{
+                  display: 'flex', gap: '1.5rem', padding: '1.5rem', alignItems: 'center', flexWrap: 'wrap'
+                }}>
+                  <img src={meta.image} alt={meta.title} style={{
+                    width: '160px', height: '100px', objectFit: 'cover', borderRadius: '0.5rem'
+                  }} />
+                  <div style={{flex: 1, minWidth: '250px'}}>
+                    <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>{meta.title}</h3>
+                    <p style={{color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1rem'}}>
+                      Next up: <span style={{color: 'white', fontWeight: 500}}>Module 1 Introduction</span>
+                    </p>
+                    
+                    {/* Progress Bar (Mocked to 0 for new profiles) */}
+                    <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                      <div style={{flex: 1, height: '6px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '3px', overflow: 'hidden'}}>
+                        <div style={{height: '100%', width: `10%`, background: 'var(--color-primary)', borderRadius: '3px'}}></div>
+                      </div>
+                      <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>10%</span>
+                    </div>
                   </div>
-                  <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{course.progress}%</span>
+                  <div style={{padding: '0 1rem'}}>
+                    <Link to={`/courses/${courseId}`} className="btn btn-primary" style={{borderRadius: '2rem'}}>
+                      <PlayCircle size={18} /> Resume
+                    </Link>
+                  </div>
                 </div>
-              </div>
-              <div style={{padding: '0 1rem'}}>
-                <Link to={`/courses/${course.id}`} className="btn btn-primary" style={{borderRadius: '2rem'}}>
-                  <PlayCircle size={18} /> Resume
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

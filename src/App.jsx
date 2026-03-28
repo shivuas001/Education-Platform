@@ -5,6 +5,8 @@ import Home from './pages/Home';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
 import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import Footer from './components/Footer';
 import './index.css';
 
@@ -19,6 +21,8 @@ function App() {
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
           </Routes>
         </main>
         <Footer />

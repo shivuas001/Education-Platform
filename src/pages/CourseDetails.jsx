@@ -152,7 +152,7 @@ const CourseDetails = () => {
       {/* Course Header */}
       <div className="course-header-banner" style={{
         position: 'relative',
-        padding: '5rem 0',
+        padding: '8rem 0 5rem 0',
         minHeight: '400px',
         display: 'flex',
         alignItems: 'center',
@@ -236,7 +236,13 @@ const CourseDetails = () => {
             </div>
           </div>
 
-          <div className="course-sidebar glass-panel" style={{padding: '2rem', position: 'sticky', top: '100px'}}>
+          <div className="course-sidebar glass-panel" style={{
+            padding: '2rem', 
+            position: 'sticky', 
+            top: '140px',
+            marginTop: '-15rem',
+            zIndex: 10
+          }}>
             <img src={course.image} alt="Course Preview" style={{width: '100%', borderRadius: '1rem', marginBottom: '1.5rem', border: '1px solid var(--color-border)'}} />
             <div style={{fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center'}}>${course.price}</div>
             

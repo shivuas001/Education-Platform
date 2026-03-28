@@ -9,6 +9,8 @@ const profileRoutes = require('./routes/profile');
 // Load environment variables
 dotenv.config();
 
+console.log("ENV VALUE:", process.env.MONGODB_URI);
+
 // Connect to database
 connectDB();
 

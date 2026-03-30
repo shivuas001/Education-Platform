@@ -23,8 +23,9 @@ app.use(express.json());
 app.use(cors());
 
 // Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/profile', require('./routes/profile'));
+app.use('/api/payment', require('./routes/payment'));
 
 app.get('/', (req, res) => {
   res.json({ message: "Welcome to EduNova API Server" });

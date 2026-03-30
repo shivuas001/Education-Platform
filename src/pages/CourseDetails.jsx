@@ -105,23 +105,43 @@ const STATIC_COURSE_DB = {
 const CourseDetails = () => {
   const { id } = useParams();
   const course = STATIC_COURSE_DB[id] || STATIC_COURSE_DB['1'];
-  
+
   const [enrolling, setEnrolling] = useState(false);
   const [enrollStatus, setEnrollStatus] = useState('');
-  
+
   const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
-  const handleEnroll = async () => {
+  // Function to lazily load the Razorpay SDK script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async () => {
     if (!userInfo) {
       window.location.href = '/login';
       return;
     }
 
     setEnrolling(true);
-    setEnrollStatus('');
+    setEnrollStatus('Starting secure payment...');
+
+    // 1. Load Razorpay Script
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      setEnrollStatus('Error: Failed to load Razorpay SDK. Are you online?');
+      setEnrolling(false);
+      return;
+    }
 
     try {
-      const res = await fetch('http://localhost:5000/api/profile/enroll', {
+      // 2. Generate Razorpay Order in Backend
+      const orderRes = await fetch('http://localhost:5000/api/payment/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,19 +149,70 @@ const CourseDetails = () => {
         },
         body: JSON.stringify({ courseId: id })
       });
-      
-      const data = await res.json();
-      
-      if (res.ok) {
-        setEnrollStatus('Success! View your dashboard.');
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1500);
-      } else {
-        setEnrollStatus(`Error: ${data.message || 'Failed'}`);
-      }
+
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.message || 'Server error creating order');
+
+      // 3. Initialize Razorpay Checkout Widget
+      const options = {
+        key: 'rzp_test_Rd7rjuRtJDimd1', // WARNING: Must be replaced with real key on client
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'EduNova Education',
+        description: `Enrollment for ${course.title}`,
+        order_id: orderData.id,
+        handler: async function (response) {
+          try {
+            setEnrollStatus('Verifying payment securely...');
+
+            // 4. Verify Payment Signature & Enroll User
+            const verifyRes = await fetch('http://localhost:5000/api/payment/verify', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${userInfo.token}`
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                courseId: id
+              })
+            });
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyRes.ok) {
+              setEnrollStatus('Success! Course unlocked.');
+              setTimeout(() => {
+                window.location.href = '/dashboard';
+              }, 1500);
+            } else {
+              setEnrollStatus(`Verification Failed: ${verifyData.message}`);
+            }
+          } catch (err) {
+            setEnrollStatus('Error verifying payment.');
+          }
+        },
+        prefill: {
+          name: userInfo.name || '',
+          email: userInfo.email || ''
+        },
+        theme: {
+          color: '#4F46E5' // Indigo primary
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+
+      paymentObject.on('payment.failed', function (response) {
+        setEnrollStatus(`Payment Failed: ${response.error.description}`);
+      });
+
+      paymentObject.open();
+
     } catch (err) {
-      setEnrollStatus('Error: Server connection failed.');
+      setEnrollStatus(`Error: ${err.message || 'Server connection failed.'}`);
     } finally {
       setEnrolling(false);
     }
@@ -170,19 +241,19 @@ const CourseDetails = () => {
         }}></div>
 
         <div className="container">
-          <div style={{maxWidth: '800px', position: 'relative', zIndex: 1}}>
-            <span className="badge glass-panel" style={{display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '2rem', background: 'var(--color-primary-light)', color: '#fff', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.5rem'}}>{course.category}</span>
-            <h1 style={{fontSize: '3rem', margin: '0 0 1rem 0', lineHeight: 1.2}}>{course.title}</h1>
-            <p style={{fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: '2rem'}}>{course.description}</p>
-            
-            <div style={{display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap'}}>
-              <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#F59E0B'}}>
+          <div style={{ maxWidth: '800px', position: 'relative', zIndex: 1 }}>
+            <span className="badge glass-panel" style={{ display: 'inline-block', padding: '0.5rem 1rem', borderRadius: '2rem', background: 'var(--color-primary-light)', color: '#fff', fontSize: '0.85rem', fontWeight: 600, marginBottom: '1.5rem' }}>{course.category}</span>
+            <h1 style={{ fontSize: '3rem', margin: '0 0 1rem 0', lineHeight: 1.2 }}>{course.title}</h1>
+            <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: '2rem' }}>{course.description}</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#F59E0B' }}>
                 <Star size={20} fill="currentColor" /> {course.rating}
               </span>
-              <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Users size={20} /> {course.students} students
               </span>
-              <span style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Clock size={20} /> {course.duration}
               </span>
             </div>
@@ -192,15 +263,15 @@ const CourseDetails = () => {
 
       {/* Course Content Grid */}
       <div className="container section-padding">
-        <div style={{display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '3rem', alignItems: 'start'}} className="course-layout-grid">
-          
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '3rem', alignItems: 'start' }} className="course-layout-grid">
+
           <div>
-            <div className="glass-panel" style={{padding: '2.5rem', marginBottom: '3rem'}}>
-              <h2 style={{fontSize: '1.8rem', marginBottom: '1.5rem'}}>What you'll learn</h2>
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem'}}>
+            <div className="glass-panel" style={{ padding: '2.5rem', marginBottom: '3rem' }}>
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>What you'll learn</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
                 {course.what_you_will_learn.map((item, idx) => (
-                  <div key={idx} style={{display: 'flex', alignItems: 'flex-start', gap: '0.75rem'}}>
-                    <CheckCircle size={20} style={{color: 'var(--color-accent)', flexShrink: 0, marginTop: '2px'}} />
+                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <CheckCircle size={20} style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: '2px' }} />
                     <span>{item}</span>
                   </div>
                 ))}
@@ -208,15 +279,15 @@ const CourseDetails = () => {
             </div>
 
             <div>
-              <h2 style={{fontSize: '1.8rem', marginBottom: '1.5rem'}}>Course Curriculum</h2>
-              <div className="glass-panel" style={{padding: '1.5rem'}}>
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem' }}>Course Curriculum</h2>
+              <div className="glass-panel" style={{ padding: '1.5rem' }}>
                 {course.modules.map((mod, idx) => (
                   <div key={idx} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '1.25rem', borderBottom: idx !== course.modules.length - 1 ? '1px solid var(--color-border)' : 'none',
                     transition: 'background 0.2s', cursor: mod.isUnlocked ? 'pointer' : 'default', borderRadius: '0.5rem'
                   }}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{
                         width: '40px', height: '40px', borderRadius: '50%',
                         background: mod.isUnlocked ? 'rgba(79, 70, 229, 0.2)' : 'rgba(255, 255, 255, 0.05)',
@@ -225,11 +296,11 @@ const CourseDetails = () => {
                       }}>
                         {mod.isUnlocked ? <PlayCircle size={20} /> : <Lock size={20} />}
                       </div>
-                      <h4 style={{margin: 0, fontSize: '1.1rem', color: mod.isUnlocked ? 'white' : 'var(--color-text-muted)'}}>
+                      <h4 style={{ margin: 0, fontSize: '1.1rem', color: mod.isUnlocked ? 'white' : 'var(--color-text-muted)' }}>
                         {idx + 1}. {mod.title}
                       </h4>
                     </div>
-                    <span style={{color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>{mod.time}</span>
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>{mod.time}</span>
                   </div>
                 ))}
               </div>
@@ -237,33 +308,34 @@ const CourseDetails = () => {
           </div>
 
           <div className="course-sidebar glass-panel" style={{
-            padding: '2rem', 
-            position: 'sticky', 
+            padding: '2rem',
+            position: 'sticky',
             top: '120px',
             zIndex: 10
           }}>
-            <img src={course.image} alt="Course Preview" style={{width: '100%', borderRadius: '1rem', marginBottom: '1.5rem', border: '1px solid var(--color-border)'}} />
-            <div style={{fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center'}}>${course.price}</div>
-            
-            {enrollStatus && <div style={{width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '0.9rem'}}>{enrollStatus}</div>}
-            
-            <button onClick={handleEnroll} disabled={enrolling} className="btn btn-primary" style={{width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem'}}>
+            <img src={course.image} alt="Course Preview" style={{ width: '100%', borderRadius: '1rem', marginBottom: '1.5rem', border: '1px solid var(--color-border)' }} />
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1.5rem', textAlign: 'center' }}>${course.price}</div>
+
+            {enrollStatus && <div style={{ width: '100%', padding: '0.75rem', marginBottom: '1rem', borderRadius: '0.5rem', background: 'rgba(255,255,255,0.05)', textAlign: 'center', fontSize: '0.9rem' }}>{enrollStatus}</div>}
+
+            <button onClick={handlePayment} disabled={enrolling} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginBottom: '1rem' }}>
               {enrolling ? 'Processing...' : 'Enroll Now'}
             </button>
-            <p style={{textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '2rem'}}>30-Day Money-Back Guarantee</p>
-            <div style={{borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem'}}>
-              <h4 style={{marginBottom: '1rem'}}>This course includes:</h4>
-              <ul style={{listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--color-text-muted)'}}>
-                <li style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><PlayCircle size={16}/> {course.duration} on-demand video</li>
-                <li style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><BookOpen size={16}/> 15 downloadable resources</li>
-                <li style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><TrendingUp size={16}/> Full lifetime access</li>
-                <li style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}><Award size={16}/> Certificate of completion</li>
+            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>30-Day Money-Back Guarantee</p>
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+              <h4 style={{ marginBottom: '1rem' }}>This course includes:</h4>
+              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--color-text-muted)' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><PlayCircle size={16} /> {course.duration} on-demand video</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><BookOpen size={16} /> 15 downloadable resources</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><TrendingUp size={16} /> Full lifetime access</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Award size={16} /> Certificate of completion</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media (max-width: 1024px) {
           .course-layout-grid {
             grid-template-columns: 1fr !important;

@@ -79,9 +79,19 @@ router.post('/verify', protect, async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
 
+      // Migrate backwards compatibility from previous test sessions to avoid Mongoose CastErrors
+      user.enrolledCourses = user.enrolledCourses.map(c => {
+        if (typeof c === 'string') return { courseId: c, completedModules: [] };
+        return c;
+      });
+
       // Check if already enrolled to prevent duplicates
-      if (!user.enrolledCourses.includes(courseId)) {
-        user.enrolledCourses.push(courseId);
+      const isEnrolled = user.enrolledCourses.find(c => c.courseId === courseId);
+      if (!isEnrolled) {
+        user.enrolledCourses.push({
+          courseId: courseId,
+          completedModules: []
+        });
         await user.save();
       }
 

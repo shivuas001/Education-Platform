@@ -21,9 +21,10 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false // Don't return password by default
   },
-  enrolledCourses: [{
-    type: String // We will store course IDs
-  }]
+  enrolledCourses: {
+    type: [mongoose.Schema.Types.Mixed],
+    default: []
+  }
 }, {
   timestamps: true
 });

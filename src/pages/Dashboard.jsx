@@ -137,7 +137,13 @@ const Dashboard = () => {
           </div>
         ) : (
           <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
-            {profile.enrolledCourses.map(courseId => {
+            {profile.enrolledCourses.map(courseObj => {
+              const courseId = typeof courseObj === 'string' ? courseObj : courseObj.courseId;
+              const completedModules = typeof courseObj === 'string' ? [] : (courseObj.completedModules || []);
+              const totalModules = 3;
+              let progressPercentage = Math.round((completedModules.length / totalModules) * 100);
+              if (progressPercentage > 100) progressPercentage = 100;
+              
               const meta = MOCK_COURSE_META[courseId] || { title: `Course ${courseId}`, image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' };
               
               return (
@@ -150,20 +156,20 @@ const Dashboard = () => {
                   <div style={{flex: 1, minWidth: '250px'}}>
                     <h3 style={{fontSize: '1.2rem', marginBottom: '0.5rem'}}>{meta.title}</h3>
                     <p style={{color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1rem'}}>
-                      Next up: <span style={{color: 'white', fontWeight: 500}}>Module 1 Introduction</span>
+                      {completedModules.length === totalModules ? <span style={{color: '#10B981'}}>🎉 Course Completed!</span> : <span>Next up: <span style={{color: 'white', fontWeight: 500}}>Module {completedModules.length + 1}</span></span>}
                     </p>
                     
-                    {/* Progress Bar (Mocked to 0 for new profiles) */}
+                    {/* Dynamic Progress Bar */}
                     <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
                       <div style={{flex: 1, height: '6px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '3px', overflow: 'hidden'}}>
-                        <div style={{height: '100%', width: `10%`, background: 'var(--color-primary)', borderRadius: '3px'}}></div>
+                        <div style={{height: '100%', width: `${progressPercentage}%`, background: 'var(--color-primary)', borderRadius: '3px'}}></div>
                       </div>
-                      <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>10%</span>
+                      <span style={{fontSize: '0.85rem', color: 'var(--color-text-muted)'}}>{progressPercentage}%</span>
                     </div>
                   </div>
                   <div style={{padding: '0 1rem'}}>
-                    <Link to={`/courses/${courseId}`} className="btn btn-primary" style={{borderRadius: '2rem'}}>
-                      <PlayCircle size={18} /> Resume
+                    <Link to={`/learn/${courseId}`} className="btn btn-primary" style={{borderRadius: '2rem'}}>
+                      <PlayCircle size={18} /> {progressPercentage === 0 ? "Start" : progressPercentage === 100 ? "Review" : "Resume"}
                     </Link>
                   </div>
                 </div>

@@ -239,8 +239,7 @@ const CourseDetails = () => {
           <div className="course-sidebar glass-panel" style={{
             padding: '2rem', 
             position: 'sticky', 
-            top: '140px',
-            marginTop: '-15rem',
+            top: '120px',
             zIndex: 10
           }}>
             <img src={course.image} alt="Course Preview" style={{width: '100%', borderRadius: '1rem', marginBottom: '1.5rem', border: '1px solid var(--color-border)'}} />

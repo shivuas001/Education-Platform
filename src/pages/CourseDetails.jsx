@@ -141,7 +141,7 @@ const CourseDetails = () => {
 
     try {
       // 2. Generate Razorpay Order in Backend
-      const orderRes = await fetch('http://localhost:5000/api/payment/orders', {
+      const orderRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payment/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const CourseDetails = () => {
             setEnrollStatus('Verifying payment securely...');
 
             // 4. Verify Payment Signature & Enroll User
-            const verifyRes = await fetch('http://localhost:5000/api/payment/verify', {
+            const verifyRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/payment/verify`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

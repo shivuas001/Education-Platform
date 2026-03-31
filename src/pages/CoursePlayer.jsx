@@ -33,7 +33,7 @@ const CoursePlayer = () => {
 
     const fetchProgress = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/profile', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile`, {
           headers: { Authorization: `Bearer ${userInfo.token}` }
         });
         const data = await res.json();
@@ -73,7 +73,7 @@ const CoursePlayer = () => {
   const markComplete = async () => {
     setSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/profile/progress', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/profile/progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

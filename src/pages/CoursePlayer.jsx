@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { CheckCircle, PlayCircle, Lock, ArrowLeft } from 'lucide-react';
+import { CheckCircle, PlayCircle, Lock, ArrowLeft, Award } from 'lucide-react';
 
 const MODULES = [
-  { id: 1, title: 'Introduction & Setup', time: '10:45', video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
-  { id: 2, title: 'Deep Dive into Concepts', time: '14:20', video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
-  { id: 3, title: 'Building the Final Project', time: '21:15', video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4' }
+  { id: 1, title: 'Introduction & Setup', time: '10:45', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+  { id: 2, title: 'Deep Dive into Concepts', time: '14:20', video: 'https://media.w3.org/2010/05/sintel/trailer.mp4' },
+  { id: 3, title: 'Building the Final Project', time: '21:15', video: 'https://media.w3.org/2010/05/bunny/trailer.mp4' }
 ];
 
 const CoursePlayer = () => {
@@ -124,7 +124,7 @@ const CoursePlayer = () => {
                 key={currentVideo.video}
                 src={currentVideo.video} 
                 controls 
-                autoPlay 
+                playsInline
                 onEnded={() => setVideoFinished(true)}
                 style={{width: '100%', borderRadius: '0.5rem', maxHeight: '70vh', background: '#000'}} 
               />

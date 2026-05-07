@@ -8,6 +8,7 @@ import CoursePlayer from './pages/CoursePlayer';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import About from './pages/About';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import './index.css';
@@ -21,6 +22,7 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:id" element={<CourseDetails />} />
             <Route path="/learn/:id" element={<CoursePlayer />} />

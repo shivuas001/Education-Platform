@@ -30,6 +30,7 @@ const Navigation = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
+    { name: 'About', path: '/about' },
     { name: 'Courses', path: '/courses' },
     { name: 'Dashboard', path: '/dashboard' }
   ];

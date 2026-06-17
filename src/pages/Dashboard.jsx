@@ -80,6 +80,8 @@ const Dashboard = () => {
     return <div className="container section-padding" style={{textAlign: 'center', paddingTop: '10rem'}}>Error loading profile.</div>;
   }
 
+  const certifiedCount = profile.enrolledCourses?.filter(c => typeof c === 'object' && c.certified).length || 0;
+
   return (
     <div className="dashboard-page animate-fade-in section-padding">
       <div className="container">
@@ -122,7 +124,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p style={{margin: 0, color: 'var(--color-text-muted)', fontSize: '0.9rem'}}>Certifications</p>
-              <h3 style={{margin: 0, fontSize: '1.5rem'}}>0</h3>
+              <h3 style={{margin: 0, fontSize: '1.5rem'}}>{certifiedCount}</h3>
             </div>
           </div>
         </div>

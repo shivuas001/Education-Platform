@@ -38,7 +38,7 @@ router.post('/enroll', protect, async (req, res) => {
     }
 
     // Check if already enrolled (handle both old string and new obj schema)
-    const isEnrolled = user.enrolledCourses.find(c => c.courseId === courseId || c === courseId);
+    const isEnrolled = user.enrolledCourses.find(c => String(c.courseId) === String(courseId) || String(c) === String(courseId));
     if (isEnrolled) {
       return res.status(400).json({ message: 'Already enrolled in this course' });
     }
@@ -65,26 +65,62 @@ router.post('/progress', protect, async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    let courseIndex = user.enrolledCourses.findIndex(c => c.courseId === courseId || c === courseId);
+    let courseIndex = user.enrolledCourses.findIndex(c => String(c.courseId) === String(courseId) || String(c) === String(courseId));
     if (courseIndex === -1) return res.status(404).json({ message: 'Not enrolled in this course' });
 
     // Safely migrate old string arrays to objects if they exist from prior tests
-    if (typeof user.enrolledCourses[courseIndex] === 'string') {
-      user.enrolledCourses[courseIndex] = { courseId: courseId, completedModules: [] };
+    const newEnrolled = [...user.enrolledCourses];
+    if (typeof newEnrolled[courseIndex] === 'string') {
+      newEnrolled[courseIndex] = { courseId: String(courseId), completedModules: [] };
     }
 
-    const courseObj = user.enrolledCourses[courseIndex];
+    if (!newEnrolled[courseIndex].completedModules) {
+      newEnrolled[courseIndex].completedModules = [];
+    }
 
-    if (!courseObj.completedModules.includes(moduleId)) {
-      courseObj.completedModules.push(moduleId);
-      user.markModified('enrolledCourses'); // CRITICAL: Tell Mongoose we changed a Mixed array element!
+    if (!newEnrolled[courseIndex].completedModules.includes(moduleId)) {
+      newEnrolled[courseIndex].completedModules.push(moduleId);
+      user.enrolledCourses = newEnrolled;
+      user.markModified('enrolledCourses');
       await user.save();
     }
     
-    res.json(courseObj);
+    res.json(newEnrolled[courseIndex]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server error updating progress' });
+  }
+});
+
+// @route   POST /api/profile/certify
+// @desc    Mark a course as certified
+// @access  Private
+router.post('/certify', protect, async (req, res) => {
+  try {
+    const { courseId } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    let courseIndex = user.enrolledCourses.findIndex(c => String(c.courseId) === String(courseId) || String(c) === String(courseId));
+    if (courseIndex === -1) return res.status(404).json({ message: 'Not enrolled in this course' });
+
+    // Safely migrate old string arrays to objects if they exist
+    const newEnrolled = [...user.enrolledCourses];
+    if (typeof newEnrolled[courseIndex] === 'string') {
+      newEnrolled[courseIndex] = { courseId: String(courseId), completedModules: [], certified: false };
+    }
+
+    if (!newEnrolled[courseIndex].certified) {
+      newEnrolled[courseIndex].certified = true;
+      user.enrolledCourses = newEnrolled;
+      user.markModified('enrolledCourses');
+      await user.save();
+    }
+    
+    res.json({ message: 'Successfully certified', course: newEnrolled[courseIndex] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server error certifying course' });
   }
 });
 

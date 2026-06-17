@@ -32,6 +32,7 @@ const Navigation = () => {
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Courses', path: '/courses' },
+    { name: 'Certification', path: '/certification' },
     { name: 'Dashboard', path: '/dashboard' }
   ];
 

@@ -1,83 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter } from 'lucide-react';
 import CourseCard from '../components/CourseCard';
-
-const ALL_COURSES = [
-  {
-    id: '1',
-    title: 'Complete Web Design: from Figma to Webflow',
-    instructor: 'Sarah Jenkins',
-    category: 'Design',
-    duration: '12h 30m',
-    students: '1,234',
-    rating: '4.9',
-    price: '89.99',
-    image: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '2',
-    title: 'Advanced React patterns and Performance',
-    instructor: 'David Chen',
-    category: 'Development',
-    duration: '15h 45m',
-    students: '3,450',
-    rating: '4.8',
-    price: '99.99',
-    image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '3',
-    title: 'Data Science Bootcamp 2024',
-    instructor: 'Michael Ross',
-    category: 'Data',
-    duration: '42h 10m',
-    students: '5,600',
-    rating: '4.9',
-    price: '129.99',
-    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '4',
-    title: 'Digital Marketing Masterclass',
-    instructor: 'Emma Stone',
-    category: 'Marketing',
-    duration: '8h 15m',
-    students: '8,900',
-    rating: '4.7',
-    price: '69.99',
-    image: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '5',
-    title: 'Python for Beginners',
-    instructor: 'James Wilson',
-    category: 'Development',
-    duration: '22h 40m',
-    students: '12,400',
-    rating: '4.9',
-    price: '49.99',
-    image: 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  },
-  {
-    id: '6',
-    title: 'UI/UX Fundamentals via Figma',
-    instructor: 'Sarah Jenkins',
-    category: 'Design',
-    duration: '10h 20m',
-    students: '4,100',
-    rating: '4.8',
-    price: '79.99',
-    image: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'
-  }
-];
 
 const CATEGORIES = ['All', 'Design', 'Development', 'Data', 'Marketing'];
 
 const Courses = () => {
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredCourses = ALL_COURSES.filter(course => {
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses`);
+      const data = await res.json();
+      if (res.ok) {
+        // Map database fields to what CourseCard expects
+        const formatted = data.map(c => ({
+          id: c._id,
+          title: c.title,
+          instructor: 'EduNova Instructor', // Default since DB doesn't have instructor yet
+          category: 'Development', // Default category
+          duration: c.modules ? `${c.modules.length} modules` : 'N/A',
+          students: c.enrolledUsers ? c.enrolledUsers.length : 0,
+          rating: '4.9',
+          price: c.price,
+          image: c.thumbnailUrl ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${c.thumbnailUrl}` : 'https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=800&q=80'
+        }));
+        setCourses(formatted);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCourses = courses.filter(course => {
     const matchesCategory = activeCategory === 'All' || course.category === activeCategory;
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -154,7 +117,9 @@ const Courses = () => {
         </div>
 
         {/* Courses Grid */}
-        {filteredCourses.length > 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem' }}>Loading courses...</div>
+        ) : filteredCourses.length > 0 ? (
           <div className="courses-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',

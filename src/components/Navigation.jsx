@@ -57,6 +57,14 @@ const Navigation = () => {
               {link.name}
             </Link>
           ))}
+          {userInfo && userInfo.role === 'admin' && (
+            <Link 
+              to="/admin"
+              className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
+            >
+              Admin Panel
+            </Link>
+          )}
         </div>
 
         <div className="nav-actions">

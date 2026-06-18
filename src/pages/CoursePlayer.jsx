@@ -2,17 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, PlayCircle, Lock, ArrowLeft, Award } from 'lucide-react';
 
-const MODULES = [
-  { id: 1, title: 'Introduction & Setup', time: '10:45', video: 'https://www.w3schools.com/html/mov_bbb.mp4' },
-  { id: 2, title: 'Deep Dive into Concepts', time: '14:20', video: 'https://media.w3.org/2010/05/sintel/trailer.mp4' },
-  { id: 3, title: 'Building the Final Project', time: '21:15', video: 'https://media.w3.org/2010/05/bunny/trailer.mp4' }
-];
-
 const CoursePlayer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [activeModule, setActiveModule] = useState(1);
+  const [course, setCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [activeModule, setActiveModule] = useState(null);
   const [completedModules, setCompletedModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -38,26 +34,40 @@ const CoursePlayer = () => {
         });
         const data = await res.json();
         
+        const courseRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses/${id}`);
+        if (!courseRes.ok) {
+          navigate('/dashboard');
+          return;
+        }
+        const courseData = await courseRes.json();
+        setCourse(courseData);
+        
+        const mappedModules = (courseData.modules || []).map(m => ({
+          id: m._id,
+          title: m.title,
+          time: m.duration,
+          video: m.videoUrl ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${m.videoUrl}` : ''
+        }));
+        setModules(mappedModules);
+        
         if (res.ok) {
-          // Find this specific course
-          const course = data.enrolledCourses?.find(c => 
+          const profileCourse = data.enrolledCourses?.find(c => 
             (typeof c === 'string' ? c === id : c.courseId === id)
           );
           
-          if (!course) {
+          if (!profileCourse) {
             navigate('/dashboard'); // Not enrolled!
             return;
           }
 
-          const completed = typeof course === 'string' ? [] : (course.completedModules || []);
+          const completed = typeof profileCourse === 'string' ? [] : (profileCourse.completedModules || []);
           setCompletedModules(completed);
           
-          // Auto-select the first uncompleted module
-          const firstUncompleted = MODULES.find(m => !completed.includes(m.id));
+          const firstUncompleted = mappedModules.find(m => !completed.includes(m.id));
           if (firstUncompleted) {
             setActiveModule(firstUncompleted.id);
-          } else {
-            setActiveModule(MODULES[0].id); // All done, just show first
+          } else if (mappedModules.length > 0) {
+            setActiveModule(mappedModules[0].id);
           }
         }
       } catch (err) {
@@ -87,8 +97,9 @@ const CoursePlayer = () => {
         setCompletedModules(data.completedModules || []);
         
         // Auto-advance to next if not the last
-        if (activeModule < MODULES.length) {
-          setActiveModule(activeModule + 1);
+        const currentIndex = modules.findIndex(m => m.id === activeModule);
+        if (currentIndex !== -1 && currentIndex < modules.length - 1) {
+          setActiveModule(modules[currentIndex + 1].id);
         }
       }
     } catch (err) {
@@ -99,8 +110,9 @@ const CoursePlayer = () => {
   };
 
   if (loading) return <div className="section-padding container" style={{textAlign: 'center', paddingTop: '10rem'}}>Loading player classroom...</div>;
+  if (!course || modules.length === 0) return <div className="section-padding container" style={{textAlign: 'center', paddingTop: '10rem'}}>Course has no modules yet.</div>;
 
-  const currentVideo = MODULES.find(m => m.id === activeModule);
+  const currentVideo = modules.find(m => m.id === activeModule) || modules[0];
 
   return (
     <div className="course-player-page animate-fade-in section-padding" style={{minHeight: '100vh', display: 'flex', flexDirection: 'column'}}>
@@ -132,7 +144,7 @@ const CoursePlayer = () => {
             
             <div className="glass-panel" style={{padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem'}}>
               <div>
-                <h1 style={{fontSize: '2rem', margin: '0 0 0.5rem 0'}}>Module {activeModule}: {currentVideo.title}</h1>
+                <h1 style={{fontSize: '2rem', margin: '0 0 0.5rem 0'}}>{course.title} - {currentVideo.title}</h1>
                 <p style={{color: 'var(--color-text-muted)', margin: 0}}>Take notes! Your progress is automatically saved to your profile.</p>
               </div>
               
@@ -163,7 +175,7 @@ const CoursePlayer = () => {
             <h3 style={{marginBottom: '1.5rem', borderBottom: '1px solid var(--color-border)', paddingBottom: '1rem'}}>Course Modules</h3>
             
             <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
-              {MODULES.map(mod => {
+              {modules.map((mod, index) => {
                 const isCompleted = completedModules.includes(mod.id);
                 const isActive = activeModule === mod.id;
 
@@ -194,7 +206,7 @@ const CoursePlayer = () => {
                       
                       <div style={{display: 'flex', flexDirection: 'column'}}>
                         <span style={{fontWeight: isActive ? 600 : 400, color: isActive ? 'white' : 'var(--color-text-muted)'}}>
-                          {mod.id}. {mod.title}
+                          {index + 1}. {mod.title}
                         </span>
                         <span style={{fontSize: '0.8rem', color: 'var(--color-text-muted)'}}>{mod.time}</span>
                       </div>
@@ -204,7 +216,7 @@ const CoursePlayer = () => {
               })}
             </div>
             
-            {completedModules.length === MODULES.length && (
+            {completedModules.length === modules.length && modules.length > 0 && (
               <div style={{marginTop: '2rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '0.5rem', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.3)'}}>
                 <Award size={32} style={{color: '#10B981', marginBottom: '0.5rem'}} />
                 <h4 style={{margin: '0 0 0.5rem 0', color: '#10B981'}}>Course Finished!</h4>

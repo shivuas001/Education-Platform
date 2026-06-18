@@ -10,6 +10,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import About from './pages/About';
 import Certification from './pages/Certification';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminRoute from './components/AdminRoute';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import './index.css';
@@ -29,6 +31,7 @@ function App() {
             <Route path="/certification" element={<Certification />} />
             <Route path="/learn/:id" element={<CoursePlayer />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
           </Routes>

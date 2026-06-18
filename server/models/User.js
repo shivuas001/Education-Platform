@@ -24,6 +24,11 @@ const userSchema = new mongoose.Schema({
   enrolledCourses: {
     type: [mongoose.Schema.Types.Mixed],
     default: []
+  },
+  role: {
+    type: String,
+    enum: ['student', 'admin'],
+    default: 'student'
   }
 }, {
   timestamps: true

@@ -37,6 +37,7 @@ const MOCK_COURSE_META = {
 
 const Dashboard = () => {
   const [profile, setProfile] = useState(null);
+  const [coursesMap, setCoursesMap] = useState({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -61,6 +62,20 @@ const Dashboard = () => {
           setProfile(data);
         } else {
           console.error('Failed to fetch profile', data.message);
+        }
+
+        const courseRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses`);
+        if (courseRes.ok) {
+          const coursesData = await courseRes.json();
+          const map = {};
+          coursesData.forEach(c => {
+            map[c._id] = {
+              title: c.title,
+              image: c.thumbnailUrl ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${c.thumbnailUrl}` : 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?auto=format&fit=crop&w=400&q=80',
+              totalModules: c.modules ? c.modules.length : 0
+            };
+          });
+          setCoursesMap(map);
         }
       } catch (err) {
         console.error(err);
@@ -142,11 +157,10 @@ const Dashboard = () => {
             {profile.enrolledCourses.map(courseObj => {
               const courseId = typeof courseObj === 'string' ? courseObj : courseObj.courseId;
               const completedModules = typeof courseObj === 'string' ? [] : (courseObj.completedModules || []);
-              const totalModules = 3;
-              let progressPercentage = Math.round((completedModules.length / totalModules) * 100);
+              const meta = coursesMap[courseId] || MOCK_COURSE_META[courseId] || { title: `Course ${courseId}`, image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', totalModules: 3 };
+              const totalModules = meta.totalModules || 3;
+              let progressPercentage = totalModules > 0 ? Math.round((completedModules.length / totalModules) * 100) : 0;
               if (progressPercentage > 100) progressPercentage = 100;
-              
-              const meta = MOCK_COURSE_META[courseId] || { title: `Course ${courseId}`, image: 'https://images.unsplash.com/photo-1516321497487-e288fb19713f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80' };
               
               return (
                 <div key={courseId} className="glass-panel" style={{

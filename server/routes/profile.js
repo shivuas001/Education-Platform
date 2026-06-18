@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Course = require('../models/Course');
 const { protect } = require('../middleware/authMiddleware');
 
 // @route   GET /api/profile
@@ -48,6 +49,11 @@ router.post('/enroll', protect, async (req, res) => {
       completedModules: []
     });
     await user.save();
+
+    // Also add user to the Course's enrolledUsers array
+    await Course.findByIdAndUpdate(courseId, {
+      $addToSet: { enrolledUsers: user._id }
+    });
 
     res.json({ message: 'Successfully enrolled', enrolledCourses: user.enrolledCourses });
   } catch (error) {
